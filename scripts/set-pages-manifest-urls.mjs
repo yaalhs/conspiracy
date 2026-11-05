@@ -29,16 +29,17 @@ function toPagesUrl(path, field) {
   return url.href;
 }
 
-if (!manifest.action || typeof manifest.action !== "object") {
-  throw new Error('The built manifest is missing its "action" configuration.');
-}
-
 manifest.icon = toPagesUrl(manifest.icon, "icon");
-manifest.action.icon = toPagesUrl(manifest.action.icon, "action.icon");
-manifest.action.popover = toPagesUrl(
-  manifest.action.popover,
-  "action.popover",
-);
+if (manifest.action !== undefined) {
+  if (typeof manifest.action !== "object" || manifest.action === null) {
+    throw new Error('The manifest "action" configuration must be an object.');
+  }
+  manifest.action.icon = toPagesUrl(manifest.action.icon, "action.icon");
+  manifest.action.popover = toPagesUrl(
+    manifest.action.popover,
+    "action.popover",
+  );
+}
 manifest.background_url = toPagesUrl(
   manifest.background_url,
   "background_url",
