@@ -1,5 +1,6 @@
 import OBR, {
   buildCurve,
+  buildLine,
   buildPath,
   Command,
   isCurve,
@@ -30,7 +31,7 @@ type PinSnap = {
 
 type StringStyle = Required<ToolMetadata>;
 
-const STRING_WIDTH_SCALE = 1.5;
+const STRING_WIDTH_SCALE = 2.25;
 const PIN_SIZE_SCALE = 1.25;
 
 const icon = (path: string) =>
@@ -424,44 +425,40 @@ async function addString(metadata: Record<string, unknown>, points: Vector2[]) {
   const snappedPins = routeThroughPins(points, pins);
   if (snappedPins.length < 2) return;
   const stringWidth = strokeWidth * STRING_WIDTH_SCALE;
+  const segments = snappedPins.slice(1).flatMap((endPosition, index) => {
+    const startPosition = snappedPins[index];
+    return [
+      buildLine()
+        .startPosition(startPosition)
+        .endPosition(endPosition)
+        .strokeColor("#17191d")
+        .strokeOpacity(0.4)
+        .strokeWidth(stringWidth + 4)
+        .name("Conspiracy string shadow")
+        .disableHit(true)
+        .build(),
+      buildLine()
+        .startPosition(startPosition)
+        .endPosition(endPosition)
+        .strokeColor(strokeColor)
+        .strokeWidth(stringWidth)
+        .name("Conspiracy string")
+        .metadata({ [EXTENSION_ID]: { kind: "string" } })
+        .build(),
+      buildLine()
+        .startPosition(startPosition)
+        .endPosition(endPosition)
+        .strokeColor("#fff2df")
+        .strokeOpacity(0.34)
+        .strokeWidth(Math.max(1, stringWidth * 0.18))
+        .strokeDash([1, 4])
+        .name("Conspiracy string weave")
+        .disableHit(true)
+        .build(),
+    ];
+  });
 
-  const shadow = buildCurve()
-    .points(snappedPins)
-    .closed(false)
-    .tension(0)
-    .fillOpacity(0)
-    .strokeColor("#17191d")
-    .strokeOpacity(0.4)
-    .strokeWidth(stringWidth + 4)
-    .name("Conspiracy string shadow")
-    .disableHit(true)
-    .build();
-
-  const string = buildCurve()
-    .points(snappedPins)
-    .closed(false)
-    .tension(0)
-    .fillOpacity(0)
-    .strokeColor(strokeColor)
-    .strokeWidth(stringWidth)
-    .name("Conspiracy string")
-    .metadata({ [EXTENSION_ID]: { kind: "string" } })
-    .build();
-
-  const weave = buildCurve()
-    .points(snappedPins)
-    .closed(false)
-    .tension(0)
-    .fillOpacity(0)
-    .strokeColor("#fff2df")
-    .strokeOpacity(0.34)
-    .strokeWidth(Math.max(1, stringWidth * 0.18))
-    .strokeDash([1, 4])
-    .name("Conspiracy string weave")
-    .disableHit(true)
-    .build();
-
-  await OBR.scene.items.addItems([shadow, string, weave]);
+  await OBR.scene.items.addItems(segments);
 }
 
 function reportError(message: string, error: unknown) {
@@ -559,8 +556,8 @@ OBR.onReady(async () => {
         await OBR.popover.open({
           id: COLOR_POPOVER_ID,
           url: new URL("./color.html", window.location.href).toString(),
-          width: 320,
-          height: 200,
+          width: 340,
+          height: 284,
           anchorElementId: elementId,
           anchorReference: "ELEMENT",
           anchorOrigin: { horizontal: "CENTER", vertical: "BOTTOM" },

@@ -7,18 +7,14 @@ import {
 } from "./constants";
 import "./style.css";
 
-const picker = document.querySelector<HTMLInputElement>("#color-picker");
 const swatches = document.querySelector<HTMLDivElement>("#swatches");
-const colorValue = document.querySelector<HTMLSpanElement>("#color-value");
 const status = document.querySelector<HTMLSpanElement>("#status");
 
-if (!picker || !swatches || !colorValue || !status) {
+if (!swatches || !status) {
   throw new Error("Conspiracy Board color controls could not be initialized.");
 }
 
-const colorPicker = picker;
 const colorSwatches = swatches;
-const selectedColorLabel = colorValue;
 const statusMessage = status;
 
 function setStatus(message: string) {
@@ -26,8 +22,16 @@ function setStatus(message: string) {
 }
 
 async function applyColor(color: string, closeAfterSelection = false) {
-  colorPicker.value = color;
-  selectedColorLabel.textContent = color.toUpperCase();
+  let selectedSwatch = false;
+  colorSwatches
+    .querySelectorAll<HTMLButtonElement>(".swatch")
+    .forEach((button) => {
+      const selected =
+        button.style.getPropertyValue("--swatch-color") === color;
+      button.setAttribute("aria-pressed", String(selected));
+      selectedSwatch ||= selected;
+    });
+  customButton.setAttribute("aria-pressed", String(!selectedSwatch));
   try {
     await OBR.tool.setMetadata(TOOL_ID, { strokeColor: color });
     setStatus("Color updated");
@@ -48,12 +52,29 @@ for (const color of PALETTE) {
   button.className = "swatch";
   button.style.setProperty("--swatch-color", color);
   button.setAttribute("aria-label", `Use ${color} for pins and strings`);
+  button.setAttribute("aria-pressed", "false");
   button.addEventListener("click", () => void applyColor(color, true));
   colorSwatches.append(button);
 }
 
-colorPicker.addEventListener("change", () =>
-  void applyColor(colorPicker.value, true),
+const customButton = document.createElement("label");
+customButton.className = "picker-wrap";
+customButton.title = "Choose a custom color";
+customButton.setAttribute("aria-label", "Choose a custom color");
+customButton.setAttribute("aria-pressed", "false");
+const customColorPicker = document.createElement("input");
+customColorPicker.id = "custom-color-picker";
+customColorPicker.type = "color";
+customColorPicker.value = DEFAULT_COLOR;
+customColorPicker.setAttribute("aria-label", "Choose a custom color");
+const plus = document.createElement("span");
+plus.setAttribute("aria-hidden", "true");
+plus.textContent = "+";
+customButton.append(customColorPicker, plus);
+colorSwatches.append(customButton);
+
+customColorPicker.addEventListener("change", () =>
+  void applyColor(customColorPicker.value, true),
 );
 
 OBR.onReady(() => {
@@ -66,8 +87,17 @@ OBR.onReady(() => {
         /^#[\da-f]{6}$/i.test(selectedColor)
           ? selectedColor
           : DEFAULT_COLOR;
-      colorPicker.value = color;
-      selectedColorLabel.textContent = color.toUpperCase();
+      customColorPicker.value = color;
+      let selectedSwatch = false;
+      colorSwatches
+        .querySelectorAll<HTMLButtonElement>(".swatch")
+        .forEach((button) => {
+          const selected =
+            button.style.getPropertyValue("--swatch-color") === color;
+          button.setAttribute("aria-pressed", String(selected));
+          selectedSwatch ||= selected;
+        });
+      customButton.setAttribute("aria-pressed", String(!selectedSwatch));
     })
     .catch((error: unknown) => {
       console.error("Could not read the current board color.", error);

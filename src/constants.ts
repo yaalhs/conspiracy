@@ -9,10 +9,19 @@ export const DEFAULT_WIDTH = 9;
 export const PIN_SNAP_RADIUS = 28;
 
 export const PALETTE = [
-  "#d84a4a",
-  "#e4b464",
-  "#4e9a73",
-  "#5285bf",
-  "#9a6db0",
-  "#eeeeea",
+  "#2176ff",
+  "#ff7433",
+  "#ff4d57",
+  "#ffd332",
+  "#b5792d",
+  "#8b4dff",
+  "#81fa5c",
+  "#489e00",
+  "#e37cf2",
+  "#39d6e8",
+  "#090a0d",
+  "#20201f",
+  "#696969",
+  "#aaaaaa",
+  "#ffffff",
 ];

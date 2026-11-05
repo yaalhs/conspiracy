@@ -22,18 +22,6 @@ body {
   padding: 22px 22px 16px;
 }
 
-.color-panel {
-  padding: 16px 18px;
-}
-
-.color-panel .heading {
-  padding-bottom: 10px;
-}
-
-.color-panel h1 {
-  font-size: 18px;
-}
-
 .heading {
   padding-bottom: 17px;
   border-bottom: 1px solid #393b3e;
@@ -129,89 +117,83 @@ h1 {
   color: #9c9b97;
 }
 
-.palette-row,
 .swatches {
-  display: flex;
-  align-items: center;
-  gap: 9px;
+  display: grid;
+  grid-template-columns: repeat(4, 48px);
+  gap: 16px 32px;
+  padding: 22px 26px;
+  background: #303342;
+}
+
+.color-panel {
+  width: max-content;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #303342;
 }
 
 .swatch,
 .picker-wrap {
-  width: 27px;
-  height: 27px;
-  border: 1px solid #56585d;
+  position: relative;
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
   border-radius: 50%;
+  cursor: pointer;
 }
 
 .swatch {
   padding: 0;
+  border: 2px solid rgb(255 255 255 / 55%);
   background: var(--swatch-color);
-  cursor: pointer;
 }
 
-.swatch:hover,
-.swatch:focus-visible {
-  outline: 2px solid #eee9df;
-  outline-offset: 2px;
+.swatch[aria-pressed="true"] {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.picker-wrap[aria-pressed="true"] {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
 }
 
 .picker-wrap {
-  position: relative;
-  display: grid;
-  flex: 0 0 auto;
   place-items: center;
   overflow: hidden;
-  background: conic-gradient(#eb5656, #eab75d, #76bd79, #5c9dde, #b570d4, #eb5656);
-  color: white;
-  font-size: 18px;
-  cursor: pointer;
+  border: 2px solid #72747c;
+  background: #20212b;
+  color: #fff;
+  font: 28px/1 "Segoe UI", sans-serif;
 }
 
-.picker-wrap input {
+.picker-wrap input[type="color"] {
   position: absolute;
-  inset: -5px;
-  width: 38px;
-  height: 38px;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   opacity: 0;
   cursor: pointer;
 }
 
 .picker-wrap span {
   pointer-events: none;
-  text-shadow: 0 1px 3px #000;
 }
 
-.hint {
-  margin: 10px 0 0;
-  color: #8d8d89;
-  font-size: 10px;
-  line-height: 1.45;
+.swatch:hover,
+.swatch:focus-visible,
+.picker-wrap:focus-within {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
 }
 
-footer {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding-top: 13px;
-  border-top: 1px solid #393b3e;
-  color: #a5a49f;
-  font-size: 9px;
-}
-
-.status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #78b987;
-  box-shadow: 0 0 8px rgb(120 185 135 / 60%);
-}
-
-.color-panel .palette {
-  padding: 12px 0 8px;
-  border-bottom: 0;
-}
-
-.color-panel .hint {
-  margin-top: 8px;
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
 }
