@@ -1,5 +1,6 @@
 export const EXTENSION_ID = "com.conspiracy-board.plugin";
 export const TOOL_ID = `${EXTENSION_ID}.board`;
+export const DRAW_TOOL_ID = "rodeo.owlbear.tool/drawing";
 export const COLOR_ACTION_ID = `${TOOL_ID}.color`;
 export const COLOR_POPOVER_ID = `${COLOR_ACTION_ID}.popover`;
 export const PIN_MODE_ID = `${TOOL_ID}.pin`;

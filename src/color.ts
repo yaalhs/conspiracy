@@ -2,8 +2,9 @@ import OBR from "@owlbear-rodeo/sdk";
 import {
   COLOR_POPOVER_ID,
   DEFAULT_COLOR,
+  DRAW_TOOL_ID,
+  EXTENSION_ID,
   PALETTE,
-  TOOL_ID,
 } from "./constants";
 import "./style.css";
 
@@ -33,7 +34,9 @@ async function applyColor(color: string, closeAfterSelection = false) {
     });
   customButton.setAttribute("aria-pressed", String(!selectedSwatch));
   try {
-    await OBR.tool.setMetadata(TOOL_ID, { strokeColor: color });
+    await OBR.tool.setMetadata(DRAW_TOOL_ID, {
+      [EXTENSION_ID]: { strokeColor: color },
+    });
     setStatus("Color updated");
     if (closeAfterSelection) {
       await OBR.popover.close(COLOR_POPOVER_ID).catch((error: unknown) => {
@@ -79,9 +82,15 @@ customColorPicker.addEventListener("change", () =>
 
 OBR.onReady(() => {
   void OBR.tool
-    .getMetadata(TOOL_ID)
+    .getMetadata(DRAW_TOOL_ID)
     .then((metadata) => {
-      const selectedColor = metadata?.strokeColor;
+      const extensionMetadata = metadata?.[EXTENSION_ID];
+      const selectedColor =
+        typeof extensionMetadata === "object" &&
+        extensionMetadata !== null &&
+        "strokeColor" in extensionMetadata
+          ? extensionMetadata.strokeColor
+          : undefined;
       const color =
         typeof selectedColor === "string" &&
         /^#[\da-f]{6}$/i.test(selectedColor)

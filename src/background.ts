@@ -9,6 +9,7 @@ import type { Item, PathCommand, Vector2 } from "@owlbear-rodeo/sdk";
 import {
   COLOR_ACTION_ID,
   COLOR_POPOVER_ID,
+  DRAW_TOOL_ID,
   DEFAULT_COLOR,
   DEFAULT_WIDTH,
   EXTENSION_ID,
@@ -172,8 +173,15 @@ let stringPreviewUpdating = false;
 let stringGestureId = 0;
 
 function getStyle(metadata: Record<string, unknown>): Required<ToolMetadata> {
-  const color = metadata.strokeColor;
-  const width = metadata.strokeWidth;
+  const extensionMetadata = metadata[EXTENSION_ID];
+  const boardMetadata =
+    typeof extensionMetadata === "object" && extensionMetadata !== null
+      ? extensionMetadata
+      : {};
+  const color =
+    "strokeColor" in boardMetadata ? boardMetadata.strokeColor : undefined;
+  const width =
+    "strokeWidth" in boardMetadata ? boardMetadata.strokeWidth : undefined;
   return {
     strokeColor:
       typeof color === "string" && /^#[\da-f]{6}$/i.test(color)
@@ -497,9 +505,21 @@ function reportError(message: string, error: unknown) {
 }
 
 OBR.onReady(async () => {
+  try {
+    await OBR.tool.remove(TOOL_ID);
+  } catch (error) {
+    reportError("Could not remove the old Conspiracy Board toolbar tool.", error);
+  }
+
   await OBR.tool.createMode({
     id: PIN_MODE_ID,
-    icons: [{ icon: icon("/pin.svg"), label: "Pin" }],
+    icons: [
+      {
+        icon: icon("/pin.svg"),
+        label: "Pin",
+        filter: { activeTools: [DRAW_TOOL_ID] },
+      },
+    ],
     onToolClick: async (context, event) => {
       try {
         await addPin(context.metadata, event.pointerPosition);
@@ -511,7 +531,13 @@ OBR.onReady(async () => {
 
   await OBR.tool.createMode({
     id: STRING_MODE_ID,
-    icons: [{ icon: icon("/string.svg"), label: "String" }],
+    icons: [
+      {
+        icon: icon("/string.svg"),
+        label: "String",
+        filter: { activeTools: [DRAW_TOOL_ID] },
+      },
+    ],
     onToolDragStart: (_context, event) => {
       stringGestureId += 1;
       stringPoints = [event.pointerPosition];
@@ -563,23 +589,13 @@ OBR.onReady(async () => {
     },
   });
 
-  await OBR.tool.create({
-    id: TOOL_ID,
-    icons: [{ icon: icon("/pin.svg"), label: "Conspiracy Board" }],
-    defaultMode: PIN_MODE_ID,
-    defaultMetadata: {
-      strokeColor: DEFAULT_COLOR,
-      strokeWidth: DEFAULT_WIDTH,
-    },
-  });
-
   await OBR.tool.createAction({
     id: COLOR_ACTION_ID,
     icons: [
       {
         icon: icon("/icon.svg"),
         label: "Choose pin and string color",
-        filter: { activeTools: [TOOL_ID] },
+        filter: { activeTools: [DRAW_TOOL_ID] },
       },
     ],
     onClick: async (_context, elementId) => {
