@@ -21,7 +21,8 @@ function toPagesUrl(path, field) {
   if (typeof path !== "string" || path.length === 0) {
     throw new Error(`The built manifest is missing "${field}".`);
   }
-  const url = new URL(path, siteUrl);
+  const extensionPath = path.startsWith("/") ? path.slice(1) : path;
+  const url = new URL(extensionPath, siteUrl);
   if (url.origin !== siteUrl.origin || !url.href.startsWith(siteUrl.href)) {
     throw new Error(`The manifest "${field}" must stay within the Pages site.`);
   }
