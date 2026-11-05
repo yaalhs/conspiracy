@@ -37,69 +37,12 @@ const PIN_SIZE_SCALE = 1.25;
 const icon = (path: string) =>
   new URL(path.replace(/^\//, ""), window.location.href).toString();
 
-const PIN_COMMANDS: PathCommand[] = [
-  [Command.MOVE, 0, -32],
-  [Command.LINE, -9, -35],
-  [Command.LINE, -16, -40],
-  [Command.LINE, -16, -45],
-  [Command.LINE, -13, -49],
-  [Command.LINE, -13, -66],
-  [Command.LINE, -20, -70],
-  [Command.LINE, -20, -75],
-  [Command.QUAD, -20, -79, -15, -79],
-  [Command.LINE, 15, -79],
-  [Command.QUAD, 20, -79, 20, -75],
-  [Command.LINE, 20, -70],
-  [Command.LINE, 13, -66],
-  [Command.LINE, 13, -49],
-  [Command.LINE, 16, -45],
-  [Command.LINE, 16, -40],
-  [Command.LINE, 9, -35],
-  [Command.CLOSE],
-];
-
 const NEEDLE_COMMANDS: PathCommand[] = [
-  [Command.MOVE, -2, -34],
-  [Command.LINE, -1, -3],
-  [Command.LINE, 0, 0],
-  [Command.LINE, 1, -3],
-  [Command.LINE, 2, -34],
-  [Command.CLOSE],
-];
-
-const PIN_HIGHLIGHT_COMMANDS: PathCommand[] = [
-  [Command.MOVE, -17, -74],
-  [Command.LINE, -14, -71],
-  [Command.LINE, -7, -67],
-  [Command.LINE, -7, -50],
-  [Command.LINE, -10, -45],
-  [Command.LINE, -10, -40],
-  [Command.LINE, -5, -36],
-  [Command.LINE, -11, -40],
-  [Command.LINE, -11, -46],
-  [Command.LINE, -9, -50],
-  [Command.LINE, -9, -68],
-  [Command.LINE, -16, -72],
-  [Command.CLOSE],
-];
-
-const PIN_SHADE_COMMANDS: PathCommand[] = [
-  [Command.MOVE, 2, -35],
-  [Command.LINE, 9, -37],
-  [Command.LINE, 16, -41],
-  [Command.LINE, 16, -45],
-  [Command.LINE, 13, -49],
-  [Command.LINE, 13, -66],
-  [Command.LINE, 20, -70],
-  [Command.LINE, 20, -75],
-  [Command.QUAD, 20, -79, 15, -79],
-  [Command.LINE, 5, -79],
-  [Command.CUBIC, 11, -76, 11, -71, 8, -68],
-  [Command.LINE, 8, -51],
-  [Command.LINE, 11, -46],
-  [Command.LINE, 11, -41],
-  [Command.LINE, 5, -37],
-  [Command.LINE, 2, -35],
+  [Command.MOVE, -2, 9],
+  [Command.LINE, -1, 20],
+  [Command.LINE, 0, 23],
+  [Command.LINE, 1, 20],
+  [Command.LINE, 2, 9],
   [Command.CLOSE],
 ];
 
@@ -145,17 +88,20 @@ function scalePathCommands(
   });
 }
 
-const SCALED_PIN_COMMANDS = scalePathCommands(PIN_COMMANDS, PIN_SIZE_SCALE);
+function circleCommands(radius: number): PathCommand[] {
+  const control = radius * 0.5522848;
+  return [
+    [Command.MOVE, 0, -radius],
+    [Command.CUBIC, control, -radius, radius, -control, radius, 0],
+    [Command.CUBIC, radius, control, control, radius, 0, radius],
+    [Command.CUBIC, -control, radius, -radius, control, -radius, 0],
+    [Command.CUBIC, -radius, -control, -control, -radius, 0, -radius],
+    [Command.CLOSE],
+  ];
+}
+
 const SCALED_NEEDLE_COMMANDS = scalePathCommands(
   NEEDLE_COMMANDS,
-  PIN_SIZE_SCALE,
-);
-const SCALED_PIN_HIGHLIGHT_COMMANDS = scalePathCommands(
-  PIN_HIGHLIGHT_COMMANDS,
-  PIN_SIZE_SCALE,
-);
-const SCALED_PIN_SHADE_COMMANDS = scalePathCommands(
-  PIN_SHADE_COMMANDS,
   PIN_SIZE_SCALE,
 );
 
@@ -204,6 +150,8 @@ async function addPin(metadata: Record<string, unknown>, position: Vector2) {
   const pinMetadata = {
     [EXTENSION_ID]: { kind: "pin" },
   };
+  const headRadius = 16 * PIN_SIZE_SCALE;
+  const baseRadius = 18 * PIN_SIZE_SCALE;
 
   const needleShadow = buildPath()
     .position({ x: position.x + 1, y: position.y + 2 })
@@ -228,9 +176,20 @@ async function addPin(metadata: Record<string, unknown>, position: Vector2) {
     .disableHit(true)
     .build();
 
+  const base = buildPath()
+    .position(position)
+    .commands(circleCommands(baseRadius))
+    .layer("PROP")
+    .fillColor("#61252b")
+    .strokeColor("#281518")
+    .strokeWidth(1.5)
+    .name("Conspiracy pin base")
+    .disableHit(true)
+    .build();
+
   const shadow = buildPath()
-    .position({ x: position.x, y: position.y + 2 })
-    .commands(SCALED_PIN_COMMANDS)
+    .position({ x: position.x + 3, y: position.y + 4 })
+    .commands(circleCommands(baseRadius))
     .layer("PROP")
     .fillColor("#111215")
     .fillOpacity(0.35)
@@ -243,34 +202,37 @@ async function addPin(metadata: Record<string, unknown>, position: Vector2) {
 
   const pin = buildPath()
     .position(position)
-    .commands(SCALED_PIN_COMMANDS)
+    .commands(circleCommands(headRadius))
     .layer("PROP")
     .fillColor(strokeColor)
     .fillOpacity(1)
     .strokeColor("#f4e8d0")
     .strokeOpacity(0.95)
-    .strokeWidth(Math.max(2, strokeWidth * 0.28))
+    .strokeWidth(Math.max(1.5, strokeWidth * 0.16))
     .name("Conspiracy pin")
     .metadata(pinMetadata)
     .build();
 
   const shade = buildPath()
-    .position(position)
-    .commands(SCALED_PIN_SHADE_COMMANDS)
+    .position({ x: position.x + 3, y: position.y + 2 })
+    .commands(circleCommands(headRadius * 0.78))
     .layer("PROP")
     .fillColor("#421b24")
-    .fillOpacity(0.24)
+    .fillOpacity(0.28)
     .strokeOpacity(0)
     .name("Conspiracy pin shading")
     .disableHit(true)
     .build();
 
   const highlight = buildPath()
-    .position(position)
-    .commands(SCALED_PIN_HIGHLIGHT_COMMANDS)
+    .position({
+      x: position.x - headRadius * 0.32,
+      y: position.y - headRadius * 0.32,
+    })
+    .commands(circleCommands(headRadius * 0.24))
     .layer("PROP")
     .fillColor("#fff6e5")
-    .fillOpacity(0.38)
+    .fillOpacity(0.45)
     .strokeOpacity(0)
     .name("Conspiracy pin highlight")
     .disableHit(true)
@@ -280,6 +242,7 @@ async function addPin(metadata: Record<string, unknown>, position: Vector2) {
     needleShadow,
     needle,
     shadow,
+    base,
     pin,
     shade,
     highlight,
@@ -432,7 +395,7 @@ async function addString(metadata: Record<string, unknown>, points: Vector2[]) {
         .startPosition(startPosition)
         .endPosition(endPosition)
         .strokeColor("#17191d")
-        .strokeOpacity(0.4)
+        .strokeOpacity(0.72)
         .strokeWidth(stringWidth + 4)
         .name("Conspiracy string shadow")
         .disableHit(true)
@@ -556,8 +519,8 @@ OBR.onReady(async () => {
         await OBR.popover.open({
           id: COLOR_POPOVER_ID,
           url: new URL("./color.html", window.location.href).toString(),
-          width: 340,
-          height: 284,
+          width: 230,
+          height: 218,
           anchorElementId: elementId,
           anchorReference: "ELEMENT",
           anchorOrigin: { horizontal: "CENTER", vertical: "BOTTOM" },

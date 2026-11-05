@@ -119,10 +119,14 @@ h1 {
 
 .swatches {
   display: grid;
-  grid-template-columns: repeat(4, 48px);
-  gap: 16px 32px;
-  padding: 22px 26px;
+  grid-template-columns: repeat(4, 34px);
+  gap: 14px;
+  padding: 16px 18px;
   background: #303342;
+}
+
+.color-picker-page {
+  min-width: 0;
 }
 
 .color-panel {
@@ -136,8 +140,8 @@ h1 {
 .picker-wrap {
   position: relative;
   display: grid;
-  width: 48px;
-  height: 48px;
+  width: 34px;
+  height: 34px;
   place-items: center;
   border-radius: 50%;
   cursor: pointer;
@@ -165,7 +169,7 @@ h1 {
   border: 2px solid #72747c;
   background: #20212b;
   color: #fff;
-  font: 28px/1 "Segoe UI", sans-serif;
+  font: 22px/1 "Segoe UI", sans-serif;
 }
 
 .picker-wrap input[type="color"] {
