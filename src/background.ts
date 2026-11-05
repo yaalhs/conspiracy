@@ -33,16 +33,74 @@ type StringStyle = Required<ToolMetadata>;
 
 const STRING_WIDTH_SCALE = 2.25;
 const PIN_SIZE_SCALE = 1.25;
+const PIN_HEAD_CENTER_OFFSET_Y = -55 * PIN_SIZE_SCALE;
 
 const icon = (path: string) =>
   new URL(path.replace(/^\//, ""), window.location.href).toString();
 
+const PIN_COMMANDS: PathCommand[] = [
+  [Command.MOVE, 0, -32],
+  [Command.LINE, -9, -35],
+  [Command.LINE, -16, -40],
+  [Command.LINE, -16, -45],
+  [Command.LINE, -13, -49],
+  [Command.LINE, -13, -66],
+  [Command.LINE, -20, -70],
+  [Command.LINE, -20, -75],
+  [Command.QUAD, -20, -79, -15, -79],
+  [Command.LINE, 15, -79],
+  [Command.QUAD, 20, -79, 20, -75],
+  [Command.LINE, 20, -70],
+  [Command.LINE, 13, -66],
+  [Command.LINE, 13, -49],
+  [Command.LINE, 16, -45],
+  [Command.LINE, 16, -40],
+  [Command.LINE, 9, -35],
+  [Command.CLOSE],
+];
+
 const NEEDLE_COMMANDS: PathCommand[] = [
-  [Command.MOVE, -2, 9],
-  [Command.LINE, -1, 20],
-  [Command.LINE, 0, 23],
-  [Command.LINE, 1, 20],
-  [Command.LINE, 2, 9],
+  [Command.MOVE, -2, -34],
+  [Command.LINE, -1, -3],
+  [Command.LINE, 0, 0],
+  [Command.LINE, 1, -3],
+  [Command.LINE, 2, -34],
+  [Command.CLOSE],
+];
+
+const PIN_HIGHLIGHT_COMMANDS: PathCommand[] = [
+  [Command.MOVE, -17, -74],
+  [Command.LINE, -14, -71],
+  [Command.LINE, -7, -67],
+  [Command.LINE, -7, -50],
+  [Command.LINE, -10, -45],
+  [Command.LINE, -10, -40],
+  [Command.LINE, -5, -36],
+  [Command.LINE, -11, -40],
+  [Command.LINE, -11, -46],
+  [Command.LINE, -9, -50],
+  [Command.LINE, -9, -68],
+  [Command.LINE, -16, -72],
+  [Command.CLOSE],
+];
+
+const PIN_SHADE_COMMANDS: PathCommand[] = [
+  [Command.MOVE, 2, -35],
+  [Command.LINE, 9, -37],
+  [Command.LINE, 16, -41],
+  [Command.LINE, 16, -45],
+  [Command.LINE, 13, -49],
+  [Command.LINE, 13, -66],
+  [Command.LINE, 20, -70],
+  [Command.LINE, 20, -75],
+  [Command.QUAD, 20, -79, 15, -79],
+  [Command.LINE, 5, -79],
+  [Command.CUBIC, 11, -76, 11, -71, 8, -68],
+  [Command.LINE, 8, -51],
+  [Command.LINE, 11, -46],
+  [Command.LINE, 11, -41],
+  [Command.LINE, 5, -37],
+  [Command.LINE, 2, -35],
   [Command.CLOSE],
 ];
 
@@ -88,20 +146,17 @@ function scalePathCommands(
   });
 }
 
-function circleCommands(radius: number): PathCommand[] {
-  const control = radius * 0.5522848;
-  return [
-    [Command.MOVE, 0, -radius],
-    [Command.CUBIC, control, -radius, radius, -control, radius, 0],
-    [Command.CUBIC, radius, control, control, radius, 0, radius],
-    [Command.CUBIC, -control, radius, -radius, control, -radius, 0],
-    [Command.CUBIC, -radius, -control, -control, -radius, 0, -radius],
-    [Command.CLOSE],
-  ];
-}
-
+const SCALED_PIN_COMMANDS = scalePathCommands(PIN_COMMANDS, PIN_SIZE_SCALE);
 const SCALED_NEEDLE_COMMANDS = scalePathCommands(
   NEEDLE_COMMANDS,
+  PIN_SIZE_SCALE,
+);
+const SCALED_PIN_HIGHLIGHT_COMMANDS = scalePathCommands(
+  PIN_HIGHLIGHT_COMMANDS,
+  PIN_SIZE_SCALE,
+);
+const SCALED_PIN_SHADE_COMMANDS = scalePathCommands(
+  PIN_SHADE_COMMANDS,
   PIN_SIZE_SCALE,
 );
 
@@ -141,17 +196,54 @@ function isBoardPin(item: Item): boolean {
   );
 }
 
+function isStringPreview(item: Item): boolean {
+  const data = item.metadata[EXTENSION_ID];
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "kind" in data &&
+    data.kind === "string-preview"
+  );
+}
+
+async function clearStaleStringPreviews() {
+  const playerId = await OBR.player.getId();
+  const [sharedPreviews, localPreviews] = await Promise.all([
+    OBR.scene.items.getItems(
+      (item) => isStringPreview(item) && item.createdUserId === playerId,
+    ),
+    OBR.scene.local.getItems(isStringPreview),
+  ]);
+  await Promise.all([
+    sharedPreviews.length > 0
+      ? OBR.scene.items.deleteItems(sharedPreviews.map((item) => item.id))
+      : Promise.resolve(),
+    localPreviews.length > 0
+      ? OBR.scene.local.deleteItems(localPreviews.map((item) => item.id))
+      : Promise.resolve(),
+  ]);
+}
+
 function getPinAnchor(item: Item): Vector2 {
-  return item.position;
+  const data = item.metadata[EXTENSION_ID];
+  const isThumbtack =
+    typeof data === "object" &&
+    data !== null &&
+    "shape" in data &&
+    data.shape === "thumbtack";
+  if (!isThumbtack) return item.position;
+
+  return {
+    x: item.position.x,
+    y: item.position.y + PIN_HEAD_CENTER_OFFSET_Y,
+  };
 }
 
 async function addPin(metadata: Record<string, unknown>, position: Vector2) {
   const { strokeColor, strokeWidth } = getStyle(metadata);
   const pinMetadata = {
-    [EXTENSION_ID]: { kind: "pin" },
+    [EXTENSION_ID]: { kind: "pin", shape: "thumbtack" },
   };
-  const headRadius = 16 * PIN_SIZE_SCALE;
-  const baseRadius = 18 * PIN_SIZE_SCALE;
 
   const needleShadow = buildPath()
     .position({ x: position.x + 1, y: position.y + 2 })
@@ -178,18 +270,20 @@ async function addPin(metadata: Record<string, unknown>, position: Vector2) {
 
   const base = buildPath()
     .position(position)
-    .commands(circleCommands(baseRadius))
+    .commands(SCALED_PIN_COMMANDS)
     .layer("PROP")
-    .fillColor("#61252b")
-    .strokeColor("#281518")
-    .strokeWidth(1.5)
-    .name("Conspiracy pin base")
-    .disableHit(true)
+    .fillColor(strokeColor)
+    .fillOpacity(1)
+    .strokeColor("#f4e8d0")
+    .strokeOpacity(0.95)
+    .strokeWidth(Math.max(2, strokeWidth * 0.28))
+    .name("Conspiracy pin")
+    .metadata(pinMetadata)
     .build();
 
   const shadow = buildPath()
-    .position({ x: position.x + 3, y: position.y + 4 })
-    .commands(circleCommands(baseRadius))
+    .position({ x: position.x, y: position.y + 2 })
+    .commands(SCALED_PIN_COMMANDS)
     .layer("PROP")
     .fillColor("#111215")
     .fillOpacity(0.35)
@@ -200,39 +294,23 @@ async function addPin(metadata: Record<string, unknown>, position: Vector2) {
     .disableHit(true)
     .build();
 
-  const pin = buildPath()
-    .position(position)
-    .commands(circleCommands(headRadius))
-    .layer("PROP")
-    .fillColor(strokeColor)
-    .fillOpacity(1)
-    .strokeColor("#f4e8d0")
-    .strokeOpacity(0.95)
-    .strokeWidth(Math.max(1.5, strokeWidth * 0.16))
-    .name("Conspiracy pin")
-    .metadata(pinMetadata)
-    .build();
-
   const shade = buildPath()
     .position({ x: position.x + 3, y: position.y + 2 })
-    .commands(circleCommands(headRadius * 0.78))
+    .commands(SCALED_PIN_SHADE_COMMANDS)
     .layer("PROP")
     .fillColor("#421b24")
-    .fillOpacity(0.28)
+    .fillOpacity(0.24)
     .strokeOpacity(0)
     .name("Conspiracy pin shading")
     .disableHit(true)
     .build();
 
   const highlight = buildPath()
-    .position({
-      x: position.x - headRadius * 0.32,
-      y: position.y - headRadius * 0.32,
-    })
-    .commands(circleCommands(headRadius * 0.24))
+    .position(position)
+    .commands(SCALED_PIN_HIGHLIGHT_COMMANDS)
     .layer("PROP")
     .fillColor("#fff6e5")
-    .fillOpacity(0.45)
+    .fillOpacity(0.38)
     .strokeOpacity(0)
     .name("Conspiracy pin highlight")
     .disableHit(true)
@@ -243,7 +321,6 @@ async function addPin(metadata: Record<string, unknown>, position: Vector2) {
     needle,
     shadow,
     base,
-    pin,
     shade,
     highlight,
   ]);
@@ -335,7 +412,7 @@ function addStringPreview(points: Vector2[], style: StringStyle, gestureId: numb
 
         if (stringPreviewId) {
           const previewId = stringPreviewId;
-          await OBR.scene.items.updateItems(
+          await OBR.scene.local.updateItems(
             (item) => item.id === previewId,
             (items) => {
               const preview = items.find(isCurve);
@@ -362,7 +439,7 @@ function addStringPreview(points: Vector2[], style: StringStyle, gestureId: numb
           .metadata({ [EXTENSION_ID]: { kind: "string-preview" } })
           .disableHit(true)
           .build();
-        await OBR.scene.items.addItems([preview]);
+        await OBR.scene.local.addItems([preview]);
         stringPreviewId = preview.id;
       }
     } catch (error: unknown) {
@@ -377,7 +454,7 @@ async function clearStringPreview() {
   await stringPreviewQueue;
   const previewId = stringPreviewId;
   stringPreviewId = null;
-  if (previewId) await OBR.scene.items.deleteItems([previewId]);
+  if (previewId) await OBR.scene.local.deleteItems([previewId]);
 }
 
 async function addString(metadata: Record<string, unknown>, points: Vector2[]) {
@@ -391,15 +468,6 @@ async function addString(metadata: Record<string, unknown>, points: Vector2[]) {
   const segments = snappedPins.slice(1).flatMap((endPosition, index) => {
     const startPosition = snappedPins[index];
     return [
-      buildLine()
-        .startPosition(startPosition)
-        .endPosition(endPosition)
-        .strokeColor("#17191d")
-        .strokeOpacity(0.72)
-        .strokeWidth(stringWidth + 4)
-        .name("Conspiracy string shadow")
-        .disableHit(true)
-        .build(),
       buildLine()
         .startPosition(startPosition)
         .endPosition(endPosition)
@@ -530,5 +598,9 @@ OBR.onReady(async () => {
         reportError("Could not open the board color picker.", error);
       }
     },
+  });
+
+  void clearStaleStringPreviews().catch((error: unknown) => {
+    reportError("Could not clear stale string trails.", error);
   });
 });
