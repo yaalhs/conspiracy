@@ -12,3 +12,7 @@ An Owlbear Rodeo extension for marking up a shared scene with evidence pins and 
 ## Development
 
 Install dependencies with `npm install`, run `npm run dev`, and load the local Vite manifest URL (`http://localhost:5173/manifest.json`) in Owlbear Rodeo. Run `npm run build` to generate deployable files in `dist/`.
+
+## Deploy with GitHub Pages
+
+The GitHub Actions workflow builds and deploys the extension when changes are pushed to `main`. In the repository settings, open **Pages** and set the source to **GitHub Actions**. After the workflow succeeds, add the published `manifest.json` URL as an extension in Owlbear Rodeo. For `yaalhs/conspiracy`, that URL is `https://yaalhs.github.io/conspiracy/manifest.json`.
