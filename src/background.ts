@@ -34,7 +34,6 @@ type StringStyle = Required<ToolMetadata>;
 
 const STRING_WIDTH_SCALE = 2.25;
 const PIN_SIZE_SCALE = 1.25;
-const PIN_HEAD_CENTER_OFFSET_Y = -55 * PIN_SIZE_SCALE;
 
 const icon = (path: string) =>
   new URL(path.replace(/^\//, ""), window.location.href).toString();
@@ -227,21 +226,6 @@ async function clearStaleStringPreviews() {
   ]);
 }
 
-function getPinAnchor(item: Item): Vector2 {
-  const data = item.metadata[EXTENSION_ID];
-  const isThumbtack =
-    typeof data === "object" &&
-    data !== null &&
-    "shape" in data &&
-    data.shape === "thumbtack";
-  if (!isThumbtack) return item.position;
-
-  return {
-    x: item.position.x,
-    y: item.position.y + PIN_HEAD_CENTER_OFFSET_Y,
-  };
-}
-
 async function addPin(metadata: Record<string, unknown>, position: Vector2) {
   const { fillColor, strokeWidth } = getStyle(metadata);
   const pinMetadata = {
@@ -339,7 +323,7 @@ function addDragPoint(points: Vector2[], point: Vector2) {
 }
 
 function findPinSnap(points: Vector2[], pin: Item): PinSnap | null {
-  const position = getPinAnchor(pin);
+  const position = pin.position;
   let bestDistance = Number.POSITIVE_INFINITY;
   let bestProgress = 0;
   let pathProgress = 0;
