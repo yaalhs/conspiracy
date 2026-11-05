@@ -1,24 +1,35 @@
 import { readFile, writeFile } from "node:fs/promises";
 
 const repository = process.env.GITHUB_REPOSITORY;
-if (!repository || !/^[\w.-]+\/[\w.-]+$/.test(repository)) {
+if (!repository) {
   throw new Error("GITHUB_REPOSITORY must be set to owner/repository.");
 }
 
-const [owner, name] = repository.split("/");
-const baseUrl = `https://${owner}.github.io/${name}/`;
-const manifestPath = "dist/manifest.json";
-const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
-
-if (!manifest.action || typeof manifest.action !== "object") {
-  throw new Error('The built manifest is missing its "action" configuration.');
+const [owner, name, ...extra] = repository.split("/");
+if (!owner || !name || extra.length > 0) {
+  throw new Error(`Invalid GitHub repository name: ${repository}`);
 }
+
+const siteUrl = new URL(
+  `${encodeURIComponent(name)}/`,
+  `https://${owner}.github.io/`,
+);
+const manifestPath = new URL("../dist/manifest.json", import.meta.url);
+const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
 
 function toPagesUrl(path, field) {
   if (typeof path !== "string" || path.length === 0) {
     throw new Error(`The built manifest is missing "${field}".`);
   }
-  return new URL(path.replace(/^\/+/, ""), baseUrl).href;
+  const url = new URL(path, siteUrl);
+  if (url.origin !== siteUrl.origin || !url.href.startsWith(siteUrl.href)) {
+    throw new Error(`The manifest "${field}" must stay within the Pages site.`);
+  }
+  return url.href;
+}
+
+if (!manifest.action || typeof manifest.action !== "object") {
+  throw new Error('The built manifest is missing its "action" configuration.');
 }
 
 manifest.icon = toPagesUrl(manifest.icon, "icon");

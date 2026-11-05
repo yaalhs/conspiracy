@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "manifest_version": 1,
   "description": "Place evidence pins and connect them with colored strings on your map.",
-  "icon": "icon.svg",
+  "icon": "./icon.svg",
   "action": {
     "title": "Conspiracy Board",
-    "icon": "icon.svg",
-    "popover": "index.html",
+    "icon": "./icon.svg",
+    "popover": "./index.html",
     "width": 320,
     "height": 420
   },
-  "background_url": "background.html"
+  "background_url": "./background.html"
 }
