@@ -99,7 +99,6 @@ const PIN_SHADE_COMMANDS: PathCommand[] = [
   [Command.CLOSE],
 ];
 
-let boardPins: Item[] = [];
 let stringPoints: Vector2[] | null = null;
 let stringPreviewId: string | null = null;
 let stringPreviewQueue: Promise<void> = Promise.resolve();
@@ -329,7 +328,8 @@ async function addString(metadata: Record<string, unknown>, points: Vector2[]) {
   if (points.length < 2) return;
 
   const { strokeColor, strokeWidth } = getStyle(metadata);
-  const snappedPins = routeThroughPins(points, boardPins);
+  const pins = await OBR.scene.items.getItems(isBoardPin);
+  const snappedPins = routeThroughPins(points, pins);
   if (snappedPins.length < 2) return;
   const stringWidth = strokeWidth * STRING_WIDTH_SCALE;
 
@@ -371,11 +371,6 @@ function reportError(message: string, error: unknown) {
 }
 
 OBR.onReady(async () => {
-  boardPins = await OBR.scene.items.getItems(isBoardPin);
-  OBR.scene.items.onChange((items) => {
-    boardPins = items.filter(isBoardPin);
-  });
-
   await OBR.tool.createMode({
     id: PIN_MODE_ID,
     icons: [{ icon: icon("/pin.svg"), label: "Pin" }],
