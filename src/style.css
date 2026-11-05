@@ -22,6 +22,18 @@ body {
   padding: 22px 22px 16px;
 }
 
+.color-panel {
+  padding: 16px 18px;
+}
+
+.color-panel .heading {
+  padding-bottom: 10px;
+}
+
+.color-panel h1 {
+  font-size: 18px;
+}
+
 .heading {
   padding-bottom: 17px;
   border-bottom: 1px solid #393b3e;
@@ -193,4 +205,13 @@ footer {
   border-radius: 50%;
   background: #78b987;
   box-shadow: 0 0 8px rgb(120 185 135 / 60%);
+}
+
+.color-panel .palette {
+  padding: 12px 0 8px;
+  border-bottom: 0;
+}
+
+.color-panel .hint {
+  margin-top: 8px;
 }

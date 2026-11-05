@@ -1,5 +1,7 @@
 export const EXTENSION_ID = "com.conspiracy-board.plugin";
 export const TOOL_ID = `${EXTENSION_ID}.board`;
+export const COLOR_ACTION_ID = `${TOOL_ID}.color`;
+export const COLOR_POPOVER_ID = `${COLOR_ACTION_ID}.popover`;
 export const PIN_MODE_ID = `${TOOL_ID}.pin`;
 export const STRING_MODE_ID = `${TOOL_ID}.string`;
 export const DEFAULT_COLOR = "#d84a4a";

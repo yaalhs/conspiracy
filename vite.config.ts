@@ -9,6 +9,7 @@ export default defineConfig({
       input: {
         main: "index.html",
         background: "background.html",
+        color: "color.html",
       },
     },
   },

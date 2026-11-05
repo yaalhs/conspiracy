@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Conspiracy Board Color</title>
+  </head>
+  <body>
+    <main class="panel color-panel">
+      <header class="heading">
+        <div class="eyebrow">CONSPIRACY BOARD</div>
+        <h1>Pin and string color</h1>
+      </header>
+
+      <section class="palette" aria-labelledby="color-title">
+        <div class="section-title">
+          <label id="color-title" for="color-picker">Board color</label>
+          <span id="color-value">#d84a4a</span>
+        </div>
+        <div class="palette-row">
+          <div id="swatches" class="swatches" aria-label="Color palette"></div>
+          <label class="picker-wrap" title="Choose a custom color">
+            <input id="color-picker" type="color" value="#d84a4a" aria-label="Choose a custom color" />
+            <span aria-hidden="true">+</span>
+          </label>
+        </div>
+        <p class="hint">Applies to new pins and strings.</p>
+      </section>
+      <footer><span class="status-dot"></span><span id="status" role="status">Ready</span></footer>
+    </main>
+    <script type="module" src="./src/color.ts"></script>
+  </body>
+</html>

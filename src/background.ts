@@ -6,6 +6,8 @@ import OBR, {
 } from "@owlbear-rodeo/sdk";
 import type { Item, PathCommand, Vector2 } from "@owlbear-rodeo/sdk";
 import {
+  COLOR_ACTION_ID,
+  COLOR_POPOVER_ID,
   DEFAULT_COLOR,
   DEFAULT_WIDTH,
   EXTENSION_ID,
@@ -29,6 +31,7 @@ type PinSnap = {
 type StringStyle = Required<ToolMetadata>;
 
 const STRING_WIDTH_SCALE = 1.5;
+const PIN_SIZE_SCALE = 1.25;
 
 const icon = (path: string) =>
   new URL(path.replace(/^\//, ""), window.location.href).toString();
@@ -99,9 +102,71 @@ const PIN_SHADE_COMMANDS: PathCommand[] = [
   [Command.CLOSE],
 ];
 
+function scalePathCommands(
+  commands: PathCommand[],
+  scale: number,
+): PathCommand[] {
+  return commands.map((command): PathCommand => {
+    switch (command[0]) {
+      case Command.MOVE:
+      case Command.LINE:
+        return [command[0], command[1] * scale, command[2] * scale];
+      case Command.QUAD:
+        return [
+          command[0],
+          command[1] * scale,
+          command[2] * scale,
+          command[3] * scale,
+          command[4] * scale,
+        ];
+      case Command.CUBIC:
+        return [
+          command[0],
+          command[1] * scale,
+          command[2] * scale,
+          command[3] * scale,
+          command[4] * scale,
+          command[5] * scale,
+          command[6] * scale,
+        ];
+      case Command.CONIC:
+        return [
+          command[0],
+          command[1] * scale,
+          command[2] * scale,
+          command[3] * scale,
+          command[4] * scale,
+          command[5],
+        ];
+      case Command.CLOSE:
+        return command;
+    }
+  });
+}
+
+const SCALED_PIN_COMMANDS = scalePathCommands(PIN_COMMANDS, PIN_SIZE_SCALE);
+const SCALED_NEEDLE_COMMANDS = scalePathCommands(
+  NEEDLE_COMMANDS,
+  PIN_SIZE_SCALE,
+);
+const SCALED_PIN_HIGHLIGHT_COMMANDS = scalePathCommands(
+  PIN_HIGHLIGHT_COMMANDS,
+  PIN_SIZE_SCALE,
+);
+const SCALED_PIN_SHADE_COMMANDS = scalePathCommands(
+  PIN_SHADE_COMMANDS,
+  PIN_SIZE_SCALE,
+);
+
 let stringPoints: Vector2[] | null = null;
 let stringPreviewId: string | null = null;
 let stringPreviewQueue: Promise<void> = Promise.resolve();
+let pendingStringPreview: {
+  points: Vector2[];
+  style: StringStyle;
+  gestureId: number;
+} | null = null;
+let stringPreviewUpdating = false;
 let stringGestureId = 0;
 
 function getStyle(metadata: Record<string, unknown>): Required<ToolMetadata> {
@@ -141,7 +206,8 @@ async function addPin(metadata: Record<string, unknown>, position: Vector2) {
 
   const needleShadow = buildPath()
     .position({ x: position.x + 1, y: position.y + 2 })
-    .commands(NEEDLE_COMMANDS)
+    .commands(SCALED_NEEDLE_COMMANDS)
+    .layer("PROP")
     .fillColor("#111215")
     .fillOpacity(0.45)
     .strokeOpacity(0)
@@ -151,7 +217,8 @@ async function addPin(metadata: Record<string, unknown>, position: Vector2) {
 
   const needle = buildPath()
     .position(position)
-    .commands(NEEDLE_COMMANDS)
+    .commands(SCALED_NEEDLE_COMMANDS)
+    .layer("PROP")
     .fillColor("#c5c8cd")
     .fillOpacity(1)
     .strokeColor("#62666d")
@@ -162,7 +229,8 @@ async function addPin(metadata: Record<string, unknown>, position: Vector2) {
 
   const shadow = buildPath()
     .position({ x: position.x, y: position.y + 2 })
-    .commands(PIN_COMMANDS)
+    .commands(SCALED_PIN_COMMANDS)
+    .layer("PROP")
     .fillColor("#111215")
     .fillOpacity(0.35)
     .strokeColor("#111215")
@@ -174,7 +242,8 @@ async function addPin(metadata: Record<string, unknown>, position: Vector2) {
 
   const pin = buildPath()
     .position(position)
-    .commands(PIN_COMMANDS)
+    .commands(SCALED_PIN_COMMANDS)
+    .layer("PROP")
     .fillColor(strokeColor)
     .fillOpacity(1)
     .strokeColor("#f4e8d0")
@@ -186,7 +255,8 @@ async function addPin(metadata: Record<string, unknown>, position: Vector2) {
 
   const shade = buildPath()
     .position(position)
-    .commands(PIN_SHADE_COMMANDS)
+    .commands(SCALED_PIN_SHADE_COMMANDS)
+    .layer("PROP")
     .fillColor("#421b24")
     .fillOpacity(0.24)
     .strokeOpacity(0)
@@ -196,7 +266,8 @@ async function addPin(metadata: Record<string, unknown>, position: Vector2) {
 
   const highlight = buildPath()
     .position(position)
-    .commands(PIN_HIGHLIGHT_COMMANDS)
+    .commands(SCALED_PIN_HIGHLIGHT_COMMANDS)
+    .layer("PROP")
     .fillColor("#fff6e5")
     .fillOpacity(0.38)
     .strokeOpacity(0)
@@ -279,42 +350,63 @@ function routeThroughPins(points: Vector2[], pins: Item[]): Vector2[] {
 }
 
 function addStringPreview(points: Vector2[], style: StringStyle, gestureId: number) {
-  stringPreviewQueue = stringPreviewQueue
-    .then(async () => {
-      if (gestureId !== stringGestureId || points.length < 2) return;
-      const strokeWidth = style.strokeWidth * STRING_WIDTH_SCALE;
+  pendingStringPreview = { points, style, gestureId };
+  if (stringPreviewUpdating) return;
 
-      if (stringPreviewId) {
-        const previewId = stringPreviewId;
-        await OBR.scene.items.updateItems(
-          (item) => item.id === previewId,
-          (items) => {
-            const preview = items.find(isCurve);
-            if (!preview) return;
-            preview.points = points;
-            preview.style.strokeColor = style.strokeColor;
-            preview.style.strokeWidth = strokeWidth;
-          },
-        );
-        return;
+  stringPreviewUpdating = true;
+  stringPreviewQueue = (async () => {
+    try {
+      while (pendingStringPreview) {
+        const request = pendingStringPreview;
+        pendingStringPreview = null;
+        if (
+          request.gestureId !== stringGestureId ||
+          request.points.length < 2
+        ) {
+          continue;
+        }
+
+        const currentPoints = [...request.points];
+        const strokeWidth = request.style.strokeWidth * STRING_WIDTH_SCALE;
+
+        if (stringPreviewId) {
+          const previewId = stringPreviewId;
+          await OBR.scene.items.updateItems(
+            (item) => item.id === previewId,
+            (items) => {
+              const preview = items.find(isCurve);
+              if (!preview) return;
+              preview.points = currentPoints;
+              preview.style.fillOpacity = 0;
+              preview.style.closed = false;
+              preview.style.strokeColor = request.style.strokeColor;
+              preview.style.strokeWidth = strokeWidth;
+            },
+          );
+          continue;
+        }
+
+        const preview = buildCurve()
+          .points(currentPoints)
+          .closed(false)
+          .tension(0)
+          .fillOpacity(0)
+          .strokeColor(request.style.strokeColor)
+          .strokeOpacity(0.82)
+          .strokeWidth(strokeWidth)
+          .name("Conspiracy string preview")
+          .metadata({ [EXTENSION_ID]: { kind: "string-preview" } })
+          .disableHit(true)
+          .build();
+        await OBR.scene.items.addItems([preview]);
+        stringPreviewId = preview.id;
       }
-
-      const preview = buildCurve()
-        .points(points)
-        .tension(0)
-        .strokeColor(style.strokeColor)
-        .strokeOpacity(0.82)
-        .strokeWidth(strokeWidth)
-        .name("Conspiracy string preview")
-        .metadata({ [EXTENSION_ID]: { kind: "string-preview" } })
-        .disableHit(true)
-        .build();
-      await OBR.scene.items.addItems([preview]);
-      stringPreviewId = preview.id;
-    })
-    .catch((error: unknown) => {
+    } catch (error: unknown) {
       reportError("Could not update the string trail.", error);
-    });
+    } finally {
+      stringPreviewUpdating = false;
+    }
+  })();
 }
 
 async function clearStringPreview() {
@@ -335,7 +427,9 @@ async function addString(metadata: Record<string, unknown>, points: Vector2[]) {
 
   const shadow = buildCurve()
     .points(snappedPins)
+    .closed(false)
     .tension(0)
+    .fillOpacity(0)
     .strokeColor("#17191d")
     .strokeOpacity(0.4)
     .strokeWidth(stringWidth + 4)
@@ -345,7 +439,9 @@ async function addString(metadata: Record<string, unknown>, points: Vector2[]) {
 
   const string = buildCurve()
     .points(snappedPins)
+    .closed(false)
     .tension(0)
+    .fillOpacity(0)
     .strokeColor(strokeColor)
     .strokeWidth(stringWidth)
     .name("Conspiracy string")
@@ -354,7 +450,9 @@ async function addString(metadata: Record<string, unknown>, points: Vector2[]) {
 
   const weave = buildCurve()
     .points(snappedPins)
+    .closed(false)
     .tension(0)
+    .fillOpacity(0)
     .strokeColor("#fff2df")
     .strokeOpacity(0.34)
     .strokeWidth(Math.max(1, stringWidth * 0.18))
@@ -394,7 +492,7 @@ OBR.onReady(async () => {
       if (!stringPoints) return;
       addDragPoint(stringPoints, event.pointerPosition);
       addStringPreview(
-        [...stringPoints],
+        stringPoints,
         getStyle(context.metadata),
         stringGestureId,
       );
@@ -405,7 +503,7 @@ OBR.onReady(async () => {
       addDragPoint(stringPoints, event.pointerPosition);
       const points = stringPoints;
       const gestureId = stringGestureId;
-      addStringPreview([...points], getStyle(context.metadata), gestureId);
+      addStringPreview(points, getStyle(context.metadata), gestureId);
       await stringPreviewQueue;
       if (gestureId !== stringGestureId) return;
       stringPoints = null;
@@ -444,6 +542,33 @@ OBR.onReady(async () => {
     defaultMetadata: {
       strokeColor: DEFAULT_COLOR,
       strokeWidth: DEFAULT_WIDTH,
+    },
+  });
+
+  await OBR.tool.createAction({
+    id: COLOR_ACTION_ID,
+    icons: [
+      {
+        icon: icon("/icon.svg"),
+        label: "Choose pin and string color",
+        filter: { activeTools: [TOOL_ID] },
+      },
+    ],
+    onClick: async (_context, elementId) => {
+      try {
+        await OBR.popover.open({
+          id: COLOR_POPOVER_ID,
+          url: new URL("./color.html", window.location.href).toString(),
+          width: 320,
+          height: 200,
+          anchorElementId: elementId,
+          anchorReference: "ELEMENT",
+          anchorOrigin: { horizontal: "CENTER", vertical: "BOTTOM" },
+          transformOrigin: { horizontal: "CENTER", vertical: "TOP" },
+        });
+      } catch (error) {
+        reportError("Could not open the board color picker.", error);
+      }
     },
   });
 });

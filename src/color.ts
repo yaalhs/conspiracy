@@ -1,5 +1,10 @@
 import OBR from "@owlbear-rodeo/sdk";
-import { DEFAULT_COLOR, PALETTE, TOOL_ID } from "./constants";
+import {
+  COLOR_POPOVER_ID,
+  DEFAULT_COLOR,
+  PALETTE,
+  TOOL_ID,
+} from "./constants";
 import "./style.css";
 
 const picker = document.querySelector<HTMLInputElement>("#color-picker");
@@ -8,7 +13,7 @@ const colorValue = document.querySelector<HTMLSpanElement>("#color-value");
 const status = document.querySelector<HTMLSpanElement>("#status");
 
 if (!picker || !swatches || !colorValue || !status) {
-  throw new Error("Conspiracy Board controls could not be initialized.");
+  throw new Error("Conspiracy Board color controls could not be initialized.");
 }
 
 const colorPicker = picker;
@@ -20,15 +25,20 @@ function setStatus(message: string) {
   statusMessage.textContent = message;
 }
 
-async function applyColor(color: string) {
+async function applyColor(color: string, closeAfterSelection = false) {
   colorPicker.value = color;
   selectedColorLabel.textContent = color.toUpperCase();
   try {
     await OBR.tool.setMetadata(TOOL_ID, { strokeColor: color });
-    setStatus("Color updated for new pins and strings");
+    setStatus("Color updated");
+    if (closeAfterSelection) {
+      await OBR.popover.close(COLOR_POPOVER_ID).catch((error: unknown) => {
+        console.error("Could not close the board color picker.", error);
+      });
+    }
   } catch (error) {
     console.error("Could not update the board tool color.", error);
-    setStatus("Could not update color — reopen the board and try again");
+    setStatus("Could not update color — try again");
   }
 }
 
@@ -38,11 +48,13 @@ for (const color of PALETTE) {
   button.className = "swatch";
   button.style.setProperty("--swatch-color", color);
   button.setAttribute("aria-label", `Use ${color} for pins and strings`);
-  button.addEventListener("click", () => void applyColor(color));
+  button.addEventListener("click", () => void applyColor(color, true));
   colorSwatches.append(button);
 }
 
-colorPicker.addEventListener("input", () => void applyColor(colorPicker.value));
+colorPicker.addEventListener("change", () =>
+  void applyColor(colorPicker.value, true),
+);
 
 OBR.onReady(() => {
   void OBR.tool
@@ -58,7 +70,7 @@ OBR.onReady(() => {
       selectedColorLabel.textContent = color.toUpperCase();
     })
     .catch((error: unknown) => {
-      console.error("Could not read the board tool color.", error);
-      setStatus("Could not load the current color");
+      console.error("Could not read the current board color.", error);
+      setStatus("Could not load color");
     });
 });
