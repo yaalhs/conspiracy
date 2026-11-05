@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Conspiracy Board</title>
+  </head>
+  <body>
+    <main class="panel">
+      <header class="heading">
+        <div class="eyebrow">CASE FILE // 01</div>
+        <h1>Conspiracy board</h1>
+        <p>Pin the evidence. Connect the dots.</p>
+      </header>
+
+      <section class="tool-guide" aria-label="How to use the board">
+        <div class="guide-row">
+          <span class="tool-icon pin-icon" aria-hidden="true">●</span>
+          <div><strong>Place a pin</strong><span>Choose Pin in Owlbear's toolbar, then click the map.</span></div>
+        </div>
+        <div class="guide-row">
+          <span class="tool-icon string-icon" aria-hidden="true">↗</span>
+          <div><strong>Draw string</strong><span>Choose String, then click two points to connect them.</span></div>
+        </div>
+      </section>
+
+      <section class="palette" aria-labelledby="color-title">
+        <div class="section-title">
+          <label id="color-title" for="color-picker">Board color</label>
+          <span id="color-value">#d84a4a</span>
+        </div>
+        <div class="palette-row">
+          <div id="swatches" class="swatches" aria-label="Color palette"></div>
+          <label class="picker-wrap" title="Choose a custom color">
+            <input id="color-picker" type="color" value="#d84a4a" aria-label="Choose a custom color" />
+            <span aria-hidden="true">+</span>
+          </label>
+        </div>
+        <p class="hint">Colors apply to new pins and strings using Owlbear's drawing tools.</p>
+      </section>
+
+      <footer><span class="status-dot"></span><span id="status" role="status">Ready to investigate</span></footer>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
