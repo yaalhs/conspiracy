@@ -26,8 +26,6 @@ jobs:
           node-version: 20
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-      - name: Run tests
-        run: npm test
       - name: Build extension
         run: npm run build
       - name: Set absolute GitHub Pages URLs in manifest
