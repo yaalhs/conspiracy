@@ -11,13 +11,18 @@ if (!picker || !swatches || !colorValue || !status) {
   throw new Error("Conspiracy Board controls could not be initialized.");
 }
 
+const colorPicker = picker;
+const colorSwatches = swatches;
+const selectedColorLabel = colorValue;
+const statusMessage = status;
+
 function setStatus(message: string) {
-  status.textContent = message;
+  statusMessage.textContent = message;
 }
 
 async function applyColor(color: string) {
-  picker.value = color;
-  colorValue.textContent = color.toUpperCase();
+  colorPicker.value = color;
+  selectedColorLabel.textContent = color.toUpperCase();
   try {
     await OBR.tool.setMetadata(TOOL_ID, { strokeColor: color });
     setStatus("Color updated for new pins and strings");
@@ -34,10 +39,10 @@ for (const color of PALETTE) {
   button.style.setProperty("--swatch-color", color);
   button.setAttribute("aria-label", `Use ${color} for pins and strings`);
   button.addEventListener("click", () => void applyColor(color));
-  swatches.append(button);
+  colorSwatches.append(button);
 }
 
-picker.addEventListener("input", () => void applyColor(picker.value));
+colorPicker.addEventListener("input", () => void applyColor(colorPicker.value));
 
 OBR.onReady(() => {
   void OBR.tool
@@ -49,8 +54,8 @@ OBR.onReady(() => {
         /^#[\da-f]{6}$/i.test(selectedColor)
           ? selectedColor
           : DEFAULT_COLOR;
-      picker.value = color;
-      colorValue.textContent = color.toUpperCase();
+      colorPicker.value = color;
+      selectedColorLabel.textContent = color.toUpperCase();
     })
     .catch((error: unknown) => {
       console.error("Could not read the board tool color.", error);
