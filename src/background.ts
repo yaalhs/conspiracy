@@ -516,7 +516,7 @@ OBR.onReady(async () => {
     id: PIN_MODE_ID,
     icons: [
       {
-        icon: icon("/pin.svg"),
+        icon: icon("/pin.svg?v=1.11.0"),
         label: "Pin",
         filter: { activeTools: [DRAW_TOOL_ID] },
       },
@@ -534,7 +534,7 @@ OBR.onReady(async () => {
     id: STRING_MODE_ID,
     icons: [
       {
-        icon: icon("/string.svg"),
+        icon: icon("/string.svg?v=1.11.0"),
         label: "String",
         filter: { activeTools: [DRAW_TOOL_ID] },
       },
