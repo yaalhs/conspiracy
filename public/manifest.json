@@ -1,6 +1,6 @@
 {
   "name": "Conspiracy Board",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "manifest_version": 1,
   "description": "Place evidence pins and connect them with colored strings on your map.",
   "icon": "/logo.png",

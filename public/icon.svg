@@ -1,34 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 986 986">
-  <title>Conspiracy board pins connected by string</title>
-  <rect width="986" height="986" rx="200" fill="#17191d"/>
-
-  <g fill="none" stroke-linecap="round">
-    <g stroke="#8a0700" stroke-width="14" transform="translate(0 4)">
-      <path d="M170 414 810 460M170 414 250 820M170 414 615 752M520 185 615 752M810 460 615 752M250 820 615 752"/>
-    </g>
-    <g stroke="#dd1a04" stroke-width="10">
-      <path d="M170 414 810 460M170 414 250 820M170 414 615 752M520 185 615 752M810 460 615 752M250 820 615 752"/>
-    </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8">
+    <path d="m5 7 13-1M5 7l8 11m5-12-5 12"/>
   </g>
-
-  <g>
-    <circle cx="518" cy="184" r="52" fill="#8a0700"/>
-    <circle cx="518" cy="184" r="43" fill="#990c05"/>
-    <circle cx="522" cy="148" r="45" fill="#e32d03"/>
-
-    <circle cx="162" cy="414" r="52" fill="#8a0700"/>
-    <circle cx="162" cy="414" r="43" fill="#990c05"/>
-    <circle cx="179" cy="391" r="45" fill="#e32d03"/>
-
-    <circle cx="810" cy="460" r="52" fill="#8a0700"/>
-    <circle cx="810" cy="460" r="43" fill="#990c05"/>
-    <circle cx="839" cy="422" r="45" fill="#e32d03"/>
-
-    <circle cx="250" cy="820" r="51" fill="#8a0700"/>
-    <circle cx="250" cy="820" r="45" fill="#e32d03"/>
-
-    <circle cx="615" cy="752" r="52" fill="#8a0700"/>
-    <circle cx="615" cy="752" r="43" fill="#990c05"/>
-    <circle cx="619" cy="744" r="45" fill="#e32d03"/>
+  <g fill="#e32d03" stroke="#fff" stroke-width=".8">
+    <circle cx="5" cy="7" r="2.7"/>
+    <circle cx="18" cy="6" r="2.7"/>
+    <circle cx="13" cy="18" r="2.7"/>
   </g>
 </svg>
