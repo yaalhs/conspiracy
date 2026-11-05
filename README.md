@@ -5,7 +5,7 @@ An Owlbear Rodeo extension for marking up a shared scene with evidence pins and 
 ## Use
 
 1. Host the built `dist/` folder and add its `manifest.json` URL as an extension in Owlbear Rodeo.
-2. Select Owlbear's **Draw** tool. The **Pin** and **String** modes and color action appear in its toolbar. Use the color action to choose a color from the palette or custom color picker.
+2. Select Owlbear's **Draw** tool. The **Pin** and **String** modes appear in its toolbar. Pins use Draw's fill color, and strings use Draw's stroke color.
 3. Choose **Pin** and click once to place a pin. Choose **String** and drag across the map to draw a connection; the string snaps through pins along its path.
 4. Select and edit or delete the resulting drawings with Owlbear's regular scene tools.
 

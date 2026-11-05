@@ -7,12 +7,11 @@ import OBR, {
 } from "@owlbear-rodeo/sdk";
 import type { Item, PathCommand, Vector2 } from "@owlbear-rodeo/sdk";
 import {
-  COLOR_ACTION_ID,
-  COLOR_POPOVER_ID,
   DRAW_TOOL_ID,
   DEFAULT_COLOR,
   DEFAULT_WIDTH,
   EXTENSION_ID,
+  LEGACY_COLOR_ACTION_ID,
   PIN_MODE_ID,
   PIN_SNAP_RADIUS,
   STRING_MODE_ID,
@@ -21,6 +20,7 @@ import {
 
 type ToolMetadata = {
   strokeColor?: string;
+  fillColor?: string;
   strokeWidth?: number;
 };
 
@@ -173,23 +173,18 @@ let stringPreviewUpdating = false;
 let stringGestureId = 0;
 
 function getStyle(metadata: Record<string, unknown>): Required<ToolMetadata> {
-  const extensionMetadata = metadata[EXTENSION_ID];
-  const boardMetadata =
-    typeof extensionMetadata === "object" && extensionMetadata !== null
-      ? extensionMetadata
-      : {};
-  const color =
-    "strokeColor" in boardMetadata ? boardMetadata.strokeColor : undefined;
-  const width =
-    "strokeWidth" in boardMetadata ? boardMetadata.strokeWidth : undefined;
+  const isColor = (value: unknown): value is string =>
+    typeof value === "string" && /^#[\da-f]{6}(?:[\da-f]{2})?$/i.test(value);
   return {
-    strokeColor:
-      typeof color === "string" && /^#[\da-f]{6}$/i.test(color)
-        ? color
-        : DEFAULT_COLOR,
+    strokeColor: isColor(metadata.strokeColor)
+      ? metadata.strokeColor
+      : DEFAULT_COLOR,
+    fillColor: isColor(metadata.fillColor) ? metadata.fillColor : DEFAULT_COLOR,
     strokeWidth:
-      typeof width === "number" && Number.isFinite(width) && width > 0
-        ? width
+      typeof metadata.strokeWidth === "number" &&
+      Number.isFinite(metadata.strokeWidth) &&
+      metadata.strokeWidth > 0
+        ? metadata.strokeWidth
         : DEFAULT_WIDTH,
   };
 }
@@ -248,7 +243,7 @@ function getPinAnchor(item: Item): Vector2 {
 }
 
 async function addPin(metadata: Record<string, unknown>, position: Vector2) {
-  const { strokeColor, strokeWidth } = getStyle(metadata);
+  const { fillColor, strokeWidth } = getStyle(metadata);
   const pinMetadata = {
     [EXTENSION_ID]: { kind: "pin", shape: "thumbtack" },
   };
@@ -280,7 +275,7 @@ async function addPin(metadata: Record<string, unknown>, position: Vector2) {
     .position(position)
     .commands(SCALED_PIN_COMMANDS)
     .layer("PROP")
-    .fillColor(strokeColor)
+    .fillColor(fillColor)
     .fillOpacity(1)
     .strokeColor("#f4e8d0")
     .strokeOpacity(0.95)
@@ -511,6 +506,12 @@ OBR.onReady(async () => {
     reportError("Could not remove the old Conspiracy Board toolbar tool.", error);
   }
 
+  try {
+    await OBR.tool.remove(LEGACY_COLOR_ACTION_ID);
+  } catch (error) {
+    reportError("Could not remove the old Conspiracy Board color action.", error);
+  }
+
   await OBR.tool.createMode({
     id: PIN_MODE_ID,
     icons: [
@@ -585,33 +586,6 @@ OBR.onReady(async () => {
         await clearStringPreview();
       } catch (error) {
         reportError("Could not clear the string trail.", error);
-      }
-    },
-  });
-
-  await OBR.tool.createAction({
-    id: COLOR_ACTION_ID,
-    icons: [
-      {
-        icon: icon("/icon.svg"),
-        label: "Choose pin and string color",
-        filter: { activeTools: [DRAW_TOOL_ID] },
-      },
-    ],
-    onClick: async (_context, elementId) => {
-      try {
-        await OBR.popover.open({
-          id: COLOR_POPOVER_ID,
-          url: new URL("./color.html", window.location.href).toString(),
-          width: 230,
-          height: 218,
-          anchorElementId: elementId,
-          anchorReference: "ELEMENT",
-          anchorOrigin: { horizontal: "CENTER", vertical: "BOTTOM" },
-          transformOrigin: { horizontal: "CENTER", vertical: "TOP" },
-        });
-      } catch (error) {
-        reportError("Could not open the board color picker.", error);
       }
     },
   });
