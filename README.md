@@ -6,7 +6,7 @@ An Owlbear Rodeo extension for marking up a shared scene with evidence pins and 
 
 1. Host the built `dist/` folder and add its `manifest.json` URL as an extension in Owlbear Rodeo.
 2. Open the Conspiracy Board action to choose a color from the included palette or the color picker.
-3. Use the Conspiracy Board toolbar tool. Choose **Pin** and click once to place a pin. Choose **String** and click two map locations to draw a connection. Press Escape to cancel a pending string.
+3. Use the Conspiracy Board toolbar tool. Choose **Pin** and click once to place a pin. Choose **String** and drag across the map to draw a connection; the string snaps through pins along its path.
 4. Select and edit or delete the resulting drawings with Owlbear's regular scene tools.
 
 ## Development

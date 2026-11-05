@@ -55,7 +55,7 @@ h1 {
 .tool-guide {
   display: grid;
   gap: 16px;
-  padding: 19px 0;
+  padding: 16px 0;
 }
 
 .guide-row {
@@ -101,8 +101,8 @@ h1 {
 }
 
 .palette {
-  padding: 15px 0 13px;
-  border-top: 1px solid #393b3e;
+  padding: 14px 0 15px;
+  border-bottom: 1px solid #393b3e;
 }
 
 .section-title {
