@@ -35,8 +35,8 @@ type StringStyle = Required<ToolMetadata>;
 
 const STRING_WIDTH_SCALE = 2.25;
 const PIN_MIN_SIZE_SCALE = 0.1;
-const PIN_SIZE_SCALE_AT_90_OPACITY = 0.6;
-const PIN_REFERENCE_FILL_OPACITY = 0.9;
+const PIN_SIZE_SCALE_AT_90_OPACITY = 0.8;
+const PIN_REFERENCE_FILL_OPACITY = 1;
 
 const icon = (path: string) =>
   new URL(path.replace(/^\//, ""), window.location.href).toString();
