@@ -34,9 +34,11 @@ type PinSnap = {
 type StringStyle = Required<ToolMetadata>;
 
 const STRING_WIDTH_SCALE = 2.25;
-const PIN_MIN_SIZE_SCALE = 0.1;
-const PIN_SIZE_SCALE_AT_90_OPACITY = 0.8;
-const PIN_REFERENCE_FILL_OPACITY = 1;
+const PIN_ARTWORK_HEIGHT = 79;
+const PIN_MIN_HEIGHT = 20;
+const PIN_MAX_HEIGHT = 55;
+const PIN_MIN_SIZE_SCALE = PIN_MIN_HEIGHT / PIN_ARTWORK_HEIGHT;
+const PIN_MAX_SIZE_SCALE = PIN_MAX_HEIGHT / PIN_ARTWORK_HEIGHT;
 
 const icon = (path: string) =>
   new URL(path.replace(/^\//, ""), window.location.href).toString();
@@ -167,7 +169,7 @@ function getStyle(metadata: Record<string, unknown>): Required<ToolMetadata> {
     typeof metadata.fillOpacity === "number" &&
     Number.isFinite(metadata.fillOpacity)
       ? Math.max(0, Math.min(1, metadata.fillOpacity))
-      : PIN_REFERENCE_FILL_OPACITY;
+    : 1;
   return {
     strokeColor: isColor(metadata.strokeColor)
       ? metadata.strokeColor
@@ -223,11 +225,10 @@ async function clearStaleStringPreviews() {
 
 async function addPin(metadata: Record<string, unknown>, position: Vector2) {
   const { fillColor, fillOpacity, strokeWidth } = getStyle(metadata);
-  const pinSizeScale =
-    PIN_MIN_SIZE_SCALE +
-    (fillOpacity / PIN_REFERENCE_FILL_OPACITY) *
-      (PIN_SIZE_SCALE_AT_90_OPACITY - PIN_MIN_SIZE_SCALE);
-  const pinOffsetScale = pinSizeScale / PIN_SIZE_SCALE_AT_90_OPACITY;
+  const pinHeight =
+    PIN_MIN_HEIGHT + fillOpacity * (PIN_MAX_HEIGHT - PIN_MIN_HEIGHT);
+  const pinSizeScale = pinHeight / PIN_ARTWORK_HEIGHT;
+  const pinOffsetScale = pinSizeScale / PIN_MAX_SIZE_SCALE;
   const pinCommands = scalePathCommands(PIN_COMMANDS, pinSizeScale);
   const needleCommands = scalePathCommands(NEEDLE_COMMANDS, pinSizeScale);
   const highlightCommands = scalePathCommands(
