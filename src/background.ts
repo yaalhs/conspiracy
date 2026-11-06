@@ -21,6 +21,7 @@ import {
 type ToolMetadata = {
   strokeColor?: string;
   fillColor?: string;
+  fillOpacity?: number;
   strokeWidth?: number;
 };
 
@@ -33,7 +34,9 @@ type PinSnap = {
 type StringStyle = Required<ToolMetadata>;
 
 const STRING_WIDTH_SCALE = 2.25;
-const PIN_SIZE_SCALE = 0.8;
+const PIN_MIN_SIZE_SCALE = 0.3;
+const PIN_SIZE_SCALE_AT_90_OPACITY = 0.8;
+const PIN_REFERENCE_FILL_OPACITY = 0.9;
 
 const icon = (path: string) =>
   new URL(path.replace(/^\//, ""), window.location.href).toString();
@@ -146,20 +149,6 @@ function scalePathCommands(
   });
 }
 
-const SCALED_PIN_COMMANDS = scalePathCommands(PIN_COMMANDS, PIN_SIZE_SCALE);
-const SCALED_NEEDLE_COMMANDS = scalePathCommands(
-  NEEDLE_COMMANDS,
-  PIN_SIZE_SCALE,
-);
-const SCALED_PIN_HIGHLIGHT_COMMANDS = scalePathCommands(
-  PIN_HIGHLIGHT_COMMANDS,
-  PIN_SIZE_SCALE,
-);
-const SCALED_PIN_SHADE_COMMANDS = scalePathCommands(
-  PIN_SHADE_COMMANDS,
-  PIN_SIZE_SCALE,
-);
-
 let stringPoints: Vector2[] | null = null;
 let stringPreviewId: string | null = null;
 let stringPreviewQueue: Promise<void> = Promise.resolve();
@@ -174,11 +163,17 @@ let stringGestureId = 0;
 function getStyle(metadata: Record<string, unknown>): Required<ToolMetadata> {
   const isColor = (value: unknown): value is string =>
     typeof value === "string" && /^#[\da-f]{6}(?:[\da-f]{2})?$/i.test(value);
+  const fillOpacity =
+    typeof metadata.fillOpacity === "number" &&
+    Number.isFinite(metadata.fillOpacity)
+      ? Math.max(0, Math.min(1, metadata.fillOpacity))
+      : PIN_REFERENCE_FILL_OPACITY;
   return {
     strokeColor: isColor(metadata.strokeColor)
       ? metadata.strokeColor
       : DEFAULT_COLOR,
     fillColor: isColor(metadata.fillColor) ? metadata.fillColor : DEFAULT_COLOR,
+    fillOpacity,
     strokeWidth:
       typeof metadata.strokeWidth === "number" &&
       Number.isFinite(metadata.strokeWidth) &&
@@ -227,14 +222,29 @@ async function clearStaleStringPreviews() {
 }
 
 async function addPin(metadata: Record<string, unknown>, position: Vector2) {
-  const { fillColor, strokeWidth } = getStyle(metadata);
+  const { fillColor, fillOpacity, strokeWidth } = getStyle(metadata);
+  const pinSizeScale =
+    PIN_MIN_SIZE_SCALE +
+    (fillOpacity / PIN_REFERENCE_FILL_OPACITY) *
+      (PIN_SIZE_SCALE_AT_90_OPACITY - PIN_MIN_SIZE_SCALE);
+  const pinOffsetScale = pinSizeScale / PIN_SIZE_SCALE_AT_90_OPACITY;
+  const pinCommands = scalePathCommands(PIN_COMMANDS, pinSizeScale);
+  const needleCommands = scalePathCommands(NEEDLE_COMMANDS, pinSizeScale);
+  const highlightCommands = scalePathCommands(
+    PIN_HIGHLIGHT_COMMANDS,
+    pinSizeScale,
+  );
+  const shadeCommands = scalePathCommands(PIN_SHADE_COMMANDS, pinSizeScale);
   const pinMetadata = {
     [EXTENSION_ID]: { kind: "pin", shape: "thumbtack" },
   };
 
   const needleShadow = buildPath()
-    .position({ x: position.x + 1, y: position.y + 2 })
-    .commands(SCALED_NEEDLE_COMMANDS)
+    .position({
+      x: position.x + pinOffsetScale,
+      y: position.y + 2 * pinOffsetScale,
+    })
+    .commands(needleCommands)
     .layer("PROP")
     .fillColor("#111215")
     .fillOpacity(0.45)
@@ -245,7 +255,7 @@ async function addPin(metadata: Record<string, unknown>, position: Vector2) {
 
   const needle = buildPath()
     .position(position)
-    .commands(SCALED_NEEDLE_COMMANDS)
+    .commands(needleCommands)
     .layer("PROP")
     .fillColor("#c5c8cd")
     .fillOpacity(1)
@@ -257,10 +267,10 @@ async function addPin(metadata: Record<string, unknown>, position: Vector2) {
 
   const base = buildPath()
     .position(position)
-    .commands(SCALED_PIN_COMMANDS)
+    .commands(pinCommands)
     .layer("PROP")
     .fillColor(fillColor)
-    .fillOpacity(1)
+    .fillOpacity(fillOpacity)
     .strokeColor("#f4e8d0")
     .strokeOpacity(0.95)
     .strokeWidth(Math.max(2, strokeWidth * 0.28))
@@ -269,8 +279,8 @@ async function addPin(metadata: Record<string, unknown>, position: Vector2) {
     .build();
 
   const shadow = buildPath()
-    .position({ x: position.x, y: position.y + 2 })
-    .commands(SCALED_PIN_COMMANDS)
+    .position({ x: position.x, y: position.y + 2 * pinOffsetScale })
+    .commands(pinCommands)
     .layer("PROP")
     .fillColor("#111215")
     .fillOpacity(0.35)
@@ -282,8 +292,11 @@ async function addPin(metadata: Record<string, unknown>, position: Vector2) {
     .build();
 
   const shade = buildPath()
-    .position({ x: position.x + 3, y: position.y + 2 })
-    .commands(SCALED_PIN_SHADE_COMMANDS)
+    .position({
+      x: position.x + 3 * pinOffsetScale,
+      y: position.y + 2 * pinOffsetScale,
+    })
+    .commands(shadeCommands)
     .layer("PROP")
     .fillColor("#421b24")
     .fillOpacity(0.24)
@@ -294,7 +307,7 @@ async function addPin(metadata: Record<string, unknown>, position: Vector2) {
 
   const highlight = buildPath()
     .position(position)
-    .commands(SCALED_PIN_HIGHLIGHT_COMMANDS)
+    .commands(highlightCommands)
     .layer("PROP")
     .fillColor("#fff6e5")
     .fillOpacity(0.38)
