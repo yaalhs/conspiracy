@@ -35,7 +35,7 @@ type StringStyle = Required<ToolMetadata>;
 
 const STRING_WIDTH_SCALE = 2.25;
 const PIN_MIN_SIZE_SCALE = 0.3;
-const PIN_SIZE_SCALE_AT_90_OPACITY = 0.8;
+const PIN_SIZE_SCALE_AT_90_OPACITY = 0.76;
 const PIN_REFERENCE_FILL_OPACITY = 0.9;
 
 const icon = (path: string) =>
@@ -270,9 +270,9 @@ async function addPin(metadata: Record<string, unknown>, position: Vector2) {
     .commands(pinCommands)
     .layer("PROP")
     .fillColor(fillColor)
-    .fillOpacity(fillOpacity)
-    .strokeColor("#f4e8d0")
-    .strokeOpacity(0.95)
+    .fillOpacity(1)
+    .strokeColor(fillColor)
+    .strokeOpacity(1)
     .strokeWidth(Math.max(2, strokeWidth * 0.28))
     .name("Conspiracy pin")
     .metadata(pinMetadata)
