@@ -1,6 +1,6 @@
 # Conspiracy Board for Owlbear Rodeo
 
-An Owlbear Rodeo extension for marking up a shared scene with evidence pins and connecting strings. Pins and strings are regular scene drawings, so they are visible to the room and can be moved or removed with Owlbear's tools.
+An Owlbear Rodeo extension for marking up a shared scene with evidence pins and connecting strings. Pins and strings are placed on the Notes layer so they remain above other scene content, and can be moved or removed with Owlbear's tools.
 
 ## Use
 
